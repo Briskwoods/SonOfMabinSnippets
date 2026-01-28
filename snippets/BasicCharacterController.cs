@@ -1,6 +1,6 @@
 // @title: Basic Character Controller
 // @description: Basic Character Controller used in the Overworld Navigation
-// @category: system, optimisation, utilities
+// @category: system, optimization, utilities
 // @tags: CharacterController, Modular
 
 public class BasicCharacterController : MonoBehaviour

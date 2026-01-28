@@ -1,6 +1,6 @@
 // @title: Combat Character Controller
 // @description: General Combat Controller used by all combat characters in the system
-// @category: system, optimisation, utilities
+// @category: system, optimization, utilities
 // @tags: CharacterController, Modular
 
 public class CombatCharacterController : MonoBehaviour

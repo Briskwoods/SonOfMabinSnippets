@@ -1,6 +1,6 @@
 // @title: Event Bus
 // @description: Combined simple and complex event bus for Event Driven Architecture
-// @category: systems, patterns
+// @category: systems, patterns, optimization
 // @tags: Event Driven Architecture, Observer Pattern
 
 public enum EventType
