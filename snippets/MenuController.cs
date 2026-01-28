@@ -1,7 +1,7 @@
-// @title: State Machine
-// @description: Generic FSM for character AI and game flow
-// @category: patterns
-// @tags: state-machine, AI, FSM
+// @title: Menu Controller
+// @description: Menu Controller Base Class
+// @category: systems, patterns, utilities
+// @tags: UI, MVVC/MVC, Observer Pattern, stacks, queues
 
 public class MenuController : MonoBehaviour
 {

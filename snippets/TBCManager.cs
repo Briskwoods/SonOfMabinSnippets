@@ -1,6 +1,6 @@
-// @title: State Machine
-// @description: Generic FSM for character AI and game flow
-// @category: patterns
+// @title: Turn Based Combat Manager
+// @description: Stripped down TBC Manager for SoM Project
+// @category: system, pattern
 // @tags: state-machine, AI, FSM
 
 public class TBCManager : MonoBehaviour

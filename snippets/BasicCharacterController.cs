@@ -1,7 +1,7 @@
-// @title: State Machine
-// @description: Generic FSM for character AI and game flow
-// @category: patterns
-// @tags: state-machine, AI, FSM
+// @title: Basic Character Controller
+// @description: Basic Character Controller used in the Overworld Navigation
+// @category: system, optimisation, utilities
+// @tags: CharacterController, Modular
 
 public class BasicCharacterController : MonoBehaviour
 {

@@ -1,7 +1,7 @@
-// @title: State Machine
-// @description: Generic FSM for character AI and game flow
-// @category: patterns
-// @tags: state-machine, AI, FSM
+// @title: Combat Menu Controller
+// @description: The Combat Menu controller inherits the Menu Controller class but is utilised for sending and recieving signals from the Combat UI's
+// @category: systems, patterns, utilities
+// @tags: UI, MVVC/MVC, Observer Pattern
 
 public class CombatMenuController : MenuController
 {

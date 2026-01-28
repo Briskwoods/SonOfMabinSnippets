@@ -1,7 +1,7 @@
-// @title: State Machine
-// @description: Generic FSM for character AI and game flow
-// @category: patterns
-// @tags: state-machine, AI, FSM
+// @title: Event Bus
+// @description: Combined simple and complex event bus for Event Driven Architecture
+// @category: systems, patterns
+// @tags: Event Driven Architecture, Observer Pattern
 
 public enum EventType
 {

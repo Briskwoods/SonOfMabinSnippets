@@ -1,7 +1,7 @@
-// @title: State Machine
-// @description: Generic FSM for character AI and game flow
-// @category: patterns
-// @tags: state-machine, AI, FSM
+// @title: Combat Character Controller
+// @description: General Combat Controller used by all combat characters in the system
+// @category: system, optimisation, utilities
+// @tags: CharacterController, Modular
 
 public class CombatCharacterController : MonoBehaviour
 {
