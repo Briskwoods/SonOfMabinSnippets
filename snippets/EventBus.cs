@@ -1,5 +1,7 @@
-using System;
-using System.Collections.Generic;
+// @title: State Machine
+// @description: Generic FSM for character AI and game flow
+// @category: patterns
+// @tags: state-machine, AI, FSM
 
 public enum EventType
 {

@@ -1,9 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
-using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
+// @title: State Machine
+// @description: Generic FSM for character AI and game flow
+// @category: patterns
+// @tags: state-machine, AI, FSM
 
 public class MenuController : MonoBehaviour
 {

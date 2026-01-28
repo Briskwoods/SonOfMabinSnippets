@@ -1,9 +1,7 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using TMPro;
-using UnityEngine;
-using UnityEngine.UI;
+// @title: State Machine
+// @description: Generic FSM for character AI and game flow
+// @category: patterns
+// @tags: state-machine, AI, FSM
 
 public class CombatMenuController : MenuController
 {

@@ -1,7 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.InputSystem;
+// @title: State Machine
+// @description: Generic FSM for character AI and game flow
+// @category: patterns
+// @tags: state-machine, AI, FSM
 
 public class BasicCharacterController : MonoBehaviour
 {
