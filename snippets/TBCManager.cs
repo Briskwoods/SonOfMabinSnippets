@@ -1,7 +1,7 @@
 // @title: Turn Based Combat Manager
 // @description: Stripped down TBC Manager for SoM Project
 // @category: system, pattern
-// @tags: state-machine, AI, FSM
+// @tags: Manager
 
 public class TBCManager : MonoBehaviour
 {
