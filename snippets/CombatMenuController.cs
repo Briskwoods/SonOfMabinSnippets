@@ -1,68 +1,111 @@
 // @title: Combat Menu Controller
-// @description: The Combat Menu controller inherits the Menu Controller class but is utilised for sending and recieving signals from the Combat UI's
+// @description: A menu controller that uses a combination of MVP Architecture and Observer Patterns to control sending and recieving data from the UI
 // @category: systems, patterns, utilities
-// @tags: UI, MVC, Observer Pattern
+// @tags: UI, MVP, Observer Pattern, MVVC/MVP
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 public class CombatMenuController : MenuController
 {
-    [Header("Combat Variables")]
-    // This script will be used for mainly combat menu functionality and works as an extension of the menu controller
-    public GameObject canvas; public GameObject actionsHUD, selectHUD, roundsHUD;
+    [Header("HUD Objects")]
+    public GameObject canvas;
+    public GameObject actionsHUD, selectHUD, roundsHUD;
 
+    [Header("Stance System")]
     public List<GameObject> stanceButtons = new List<GameObject>();
     public GameObject currentStance;
 
+    [Header("Private Variables")]
     bool isSelecting = false;
+    TBCManager combatManager;
 
+    [Header("Ability Queue")]
+    public TextMeshProUGUI queueStatusText;
+
+    [Header("Combat UI's and Sub-Menu's")]
     public CombatHUDModel combatUI;
-    public MenuModel selectUI, abilitiesUI;
-    public List<Button> targetButtons = new List<Button>();
-    public List<Button> abilityButtons = new List<Button>();
+    public SelectHUDModel selectUI;
+    public AbilityHUDModel abilitiesUI;
 
+    [Header("Data Containers")]
+    public List<TargetBtnDataContainer> targetDataContainers = new List<TargetBtnDataContainer>();
+    public List<AbilityBtnDataContainer> abilityDataContainers = new List<AbilityBtnDataContainer>();
+
+    [Header("Rounds UI System")]
     public RoundsUIController roundsUIController;
 
+    // ACTIONS AND EVENTS
     public event Action<MenuModel> OnAbilitiesMenuRequested;
-    public event Action<int> OnAbilitySelected;
+    public event Action<AbilityBtnDataContainer> OnAbilitySelected;
     public event Action<MenuModel> OnSelectTargetMenuRequested;
     public event Action<MenuModel> OnInventoryMenuRequested;
     public event Action OnAttackRequested;
     public event Action OnParryRequested;
     public event Action OnTauntRequested;
     public event Action OnFleeRequested;
-    public event Action OnTargetSelected;
+    public event Action<TargetBtnDataContainer> OnTargetSelected;
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////// ON START/AWAKE EVENTS ///////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void SetCombatManager(TBCManager manager)
+    {
+        combatManager = manager;
+    }
+
+    void SetupTargetButtons()
+    {
+        selectUI.Init();
+        targetDataContainers = new List<TargetBtnDataContainer>(selectUI.dataContainers);
+    }
+
+    void SetupAbilityButtons()
+    {
+        abilitiesUI.Init();
+        abilityDataContainers = new List<AbilityBtnDataContainer>(abilitiesUI.dataContainers);
+    }
 
     private void Start()
     {
         Debug.Log($"Combat Menu: Current Menu: {currentMenu}");
-        targetButtons = new List<Button>(selectUI.menuButtons);
-        abilityButtons = new List<Button>(abilitiesUI.menuButtons);
+        SetupTargetButtons();
+        SetupAbilityButtons();
     }
 
     private void OnEnable()
     {
+        // INPUT RECIVER FUNCITONS
         InputReciever.OnSubmitPressed += ClickBtn;
         InputReciever.OnBackPressed += GoBack;
         InputReciever.OnNavigate += NavigateMenu;
         InputReciever.OnMenuOpen += OpenMenu;
 
-        // Turn Based Combat Events
+        // TURN BASED COMBAT FUNCTIONS
         EventBus.Subscribe<CombatMenuResetEventData>(ResetCombatMenu);
     }
 
     private void OnDisable()
     {
+        // INPUT RECIVER FUNCITONS
         InputReciever.OnSubmitPressed -= ClickBtn;
         InputReciever.OnBackPressed -= GoBack;
         InputReciever.OnNavigate -= NavigateMenu;
         InputReciever.OnMenuOpen -= OpenMenu;
 
-        // Turn Based Combat Events
+        // TURN BASED COMBAT FUNCTIONS
         EventBus.Unsubscribe<CombatMenuResetEventData>(ResetCombatMenu);
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////// STANCE MENU FUNCTIONALITY ///////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     void DisableOtherStanceBtns()
     {
-        foreach(GameObject button in stanceButtons)
+        foreach (GameObject button in stanceButtons)
         {
             Debug.Log($"Combat Menu: Disabled {button.name}");
             button.SetActive(false);
@@ -80,8 +123,8 @@ public class CombatMenuController : MenuController
 
         // From there we need to
         // 1. Remove the inactive buttons from the all buttons list that copies from the Menu Model
-        
-        if(menuHistory.Count < 1)
+
+        if (menuHistory.Count < 1)
         {
             SetCurrentMenu(combatUI);
             LoadMenuData(combatUI);
@@ -90,40 +133,33 @@ public class CombatMenuController : MenuController
         }
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////// COMBAT MENU FUNCTIONALITY ///////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public bool CheckIfCombatHUDIsActive() => actionsHUD.activeInHierarchy ? true : false;
 
-    public void ToggleCombatHUD(bool toggle)=> actionsHUD.SetActive(toggle);
+    public void ToggleCombatHUD(bool toggle) => actionsHUD.SetActive(toggle);
 
     public void ToggleSelectHUD(bool toggle)
     {
+        ToggleCombatHUD(!toggle);
         selectHUD.SetActive(toggle);
         isSelecting = toggle;
     }
 
-    
-
-    public void LoadTargets(List<CombatCharacterController> targetsToLoad)
-    { 
-        Debug.Log("Combat Menu: Targets Loaded");
-        DisableTargetButtons();
-
-        // This fn will change to basically highlight the active enemies whilst only enabling the btn in the bg6 
-        for(int i = 0; i < targetsToLoad.Count; i++)
-        {
-            targetButtons[i].gameObject.name = targetsToLoad[i].name;
-            targetButtons[i].GetComponentInChildren<TextMeshProUGUI>().SetText(targetsToLoad[i].name);
-            targetButtons[i].gameObject.SetActive(true);
-        }
-    }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////// ACTIONS /////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void OnAbilitiesMenuButtonClicked(MenuModel submenu)
     {
         OnAbilitiesMenuRequested?.Invoke(submenu);
     }
 
-    public void OnAbilitySelectedClicked()
+    public void OnAbilitySelectedClicked(AbilityBtnDataContainer abilityBtnData)
     {
-        OnAbilitySelected?.Invoke(GetCurrentButtonIndex());
+        OnAbilitySelected?.Invoke(abilityBtnData);
     }
 
     public void OnSelectTargetClicked(MenuModel submenu)
@@ -131,9 +167,9 @@ public class CombatMenuController : MenuController
         OnSelectTargetMenuRequested?.Invoke(submenu);
     }
 
-    public void OnTargetSelectedClcicked()
+    public void OnTargetSelectedClcicked(TargetBtnDataContainer targetData)
     {
-        OnTargetSelected?.Invoke();
+        OnTargetSelected?.Invoke(targetData);
     }
 
     public void OnInventoryButtonClicked(MenuModel submenu)
@@ -161,92 +197,128 @@ public class CombatMenuController : MenuController
         OnTauntRequested?.Invoke();
     }
 
-    public RectTransform highlighter;
-    [SerializeField] private float offsetFromButton = 10f;
-    public void UpdateHighlighterPosition()
-    {
-        // disabled by default
-        if (!highlighter.gameObject.activeSelf) highlighter.gameObject.SetActive(true);
-
-        // Exit if highlighter is emprt
-        RectTransform buttonRectTransform = currentButton.GetComponent<RectTransform>();
-        if (highlighter == null || buttonRectTransform == null) return;
-
-        // Update highlighter position
-        highlighter.SetParent(currentButton.transform.parent, false);
-        if (highlighter.parent != buttonRectTransform.parent)
-        {
-            Debug.LogWarning("Arrow and button should share the same parent for accurate positioning");
-        }
-
-        // Account for button's pivot point
-        Vector2 buttonPos = buttonRectTransform.anchoredPosition;
-        Rect buttonRect = buttonRectTransform.rect;
-        Vector2 buttonPivot = buttonRectTransform.pivot;
-
-        // Calculate the actual left edge position
-        float leftEdgeX = buttonPos.x - (buttonRect.width * buttonPivot.x);
-        float centerY = buttonPos.y + (buttonRect.height * (0.5f - buttonPivot.y));
-
-        highlighter.anchoredPosition = new Vector2(
-            leftEdgeX - offsetFromButton,
-            centerY
-        );
-    }
-
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////// ABILITIES SUB-MENU FUNCTIONALITY //////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public void DisplayAbilities(List<Ability> characterAbilities)
     {
         // First we disable all ability btns
         DisableAbilityButtons();
         allButtons.Clear();
-
         // After we update the Button text/data for each ability to match ability name
         for (int i = 0; i < characterAbilities.Count; i++)
         {
-            abilityButtons[i].gameObject.name = characterAbilities[i].name;
-            abilityButtons[i].GetComponentInChildren<TextMeshProUGUI>().SetText(characterAbilities[i].name);
-            abilityButtons[i].gameObject.SetActive(true);
-            allButtons.Add(abilityButtons[i]);
+            abilityDataContainers[i].LoadAbilityDataToContainer(characterAbilities[i]);
+            abilityDataContainers[i].Open();
         }
     }
 
-    public void DisplaySinglecastAbilities(List<Ability> characterAbilities)
+    public void OpenAbilitiesSubMenu(MenuModel submenu)
     {
-        // First we disable all ability btns
-        DisableAbilityButtons();
-        allButtons.Clear();
-
-        // After we update the Button text/data for each ability to match ability name
-        for (int i = 0; i < characterAbilities.Count; i++)
+        OpenSubMenu(submenu);
+        List<Button> temp = new List<Button>();
+        for (int i = 0; i < abilityDataContainers.Count; i++)
         {
-            if (characterAbilities[i].selectionType != Ability.SelectType.multiSelection)
-            {
-                abilityButtons[i].gameObject.name = characterAbilities[i].name;
-                abilityButtons[i].GetComponentInChildren<TextMeshProUGUI>().SetText(characterAbilities[i].name);
-                abilityButtons[i].gameObject.SetActive(true);
-                allButtons.Add(abilityButtons[i]);
-            }
+            if (abilityDataContainers[i].gameObject.activeSelf) { temp.Add(abilityDataContainers[i].GetButton()); }
+        }
+        Debug.Log($"Combat Menu: Disabled Unavailable Ability Buttons");
+        allButtons = new List<Button>(temp);
+
+        RefreshSelectorPosition();
+    }
+
+    public void DisableAbilityButtons()
+    {
+        for (int i = 0; i < abilityDataContainers.Count; i++)
+        {
+            abilityDataContainers[i].Close();
         }
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////// TARGET SUB-MENU FUNCTIONALITY ///////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void LoadDataOntoTargetSubmenu(Ability ability, List<CombatCharacterController> targets)
+    {
+        switch (ability.selectionType)
+        {
+            case Ability.SelectType.singleSelection:
+                LoadTargets(targets, selectUI, false);
+                break;
+            case Ability.SelectType.multiSelection:
+                LoadTargets(targets, selectUI, true);
+                break;
+        }
+    }
+
+    public void LoadTargets(List<CombatCharacterController> targetsToLoad, SelectHUDModel menuToOpen, bool isMutipleTargets)
+    {
+        switch (isMutipleTargets)
+        {
+            case true:
+                DisableTargetButtons();
+                targetDataContainers[0].LoadTargetDataToContainer(targetsToLoad);
+                targetDataContainers[0].Open();
+                OpenTargetsSubMenu(menuToOpen);
+                break;
+            case false:
+                DisableTargetButtons();
+                for (int i = 0; i < targetsToLoad.Count; i++)
+                {
+                    List<CombatCharacterController> dataContainerList = new List<CombatCharacterController>();
+                    dataContainerList.Add(targetsToLoad[i]);
+                    targetDataContainers[i].LoadTargetDataToContainer(dataContainerList);
+                    targetDataContainers[i].Open();
+                    targetDataContainers[i].RenameTargetButton(targetsToLoad[i].name);
+                }
+                OpenTargetsSubMenu(menuToOpen);
+                break;
+        }
+    }
+
+    public void OpenTargetsSubMenu(SelectHUDModel submenu)
+    {
+        OpenSubMenu(submenu);
+        // We would also toggle the Select HUD active at some point
+        ToggleSelectHUD(true);
+        //We then remove inactive buttons from the current list
+        List<Button> temp = new List<Button>();
+        for (int i = 0; i < targetDataContainers.Count; i++)
+        {
+            if (targetDataContainers[i].gameObject.activeSelf) { temp.Add(targetDataContainers[i].targetButton); }
+        }
+        allButtons = new List<Button>(temp);
+        RefreshSelectorPosition();
+    }
+
+    public void DisableTargetButtons()
+    {
+        for (int i = 0; i < targetDataContainers.Count; i++)
+        {
+            targetDataContainers[i].gameObject.SetActive(false);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////// MENU AND CONTROL FUNCTIONS ////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public override void GoBack()
     {
-        switch (isSelecting) // Switch to use/check state of the system
+        switch (isSelecting)
         {
             case true:
                 ToggleSelectHUD(false);
                 ToggleCombatHUD(true);
                 base.GoBack();
-
-                if (currentMenu == abilitiesUI) { RemoveUnavailableAbilitiesFromSelection(); }
                 // similar fn for Inventory should be added
-
-
+                if (currentMenu == abilitiesUI) { RemoveUnavailableAbilitiesFromSelection(); }
                 Debug.Log($"Combat Menu: Back from Select Targets UI");
                 break;
             case false:
-                base.GoBack(); 
+                base.GoBack();
                 RefreshCombatUI();
                 Debug.Log($"Combat Menu: Normal Back");
                 break;
@@ -257,24 +329,19 @@ public class CombatMenuController : MenuController
     {
         int stanceBtn = (int)stance.stanceType;
         Button activeStanceBtn = combatUI.stanceButtons[stanceBtn];
-
         List<Button> activeMenuButtons = new List<Button>();
-
         if (!activeMenuButtons.Contains(activeStanceBtn)) activeMenuButtons.Add(activeStanceBtn);
         activeMenuButtons.AddRange(combatUI.menuButtons);
-        
         allButtons = new List<Button>(activeMenuButtons);
     }
 
     public void RemoveUnavailableTargetsFromSelection()
     {
         List<Button> temp = new List<Button>();
-
-        for (int i = 0; i < targetButtons.Count; i++)
+        for (int i = 0; i < targetDataContainers.Count; i++)
         {
-            if (targetButtons[i].gameObject.activeSelf) { temp.Add(targetButtons[i]); }
+            if (targetDataContainers[i].gameObject.activeSelf) { temp.Add(targetDataContainers[i].GetButton()); }
         }
-
         allButtons = new List<Button>(temp);
         Debug.Log($"Combat Menu: Disabled Unavailable Target Buttons");
     }
@@ -283,15 +350,12 @@ public class CombatMenuController : MenuController
     public void RemoveUnavailableAbilitiesFromSelection()
     {
         List<Button> temp = new List<Button>();
-
-        for (int i = 0; i < abilityButtons.Count; i++)
+        for (int i = 0; i < abilityDataContainers.Count; i++)
         {
-            if (abilityButtons[i].gameObject.activeSelf) { temp.Add(abilityButtons[i]); }
+            if (abilityDataContainers[i].gameObject.activeSelf) { temp.Add(abilityDataContainers[i].GetButton()); }
         }
         Debug.Log($"Combat Menu: Disabled Unavailable Ability Buttons");
         allButtons = new List<Button>(temp);
-
-        // Above causes an issue in scrolling through the menu when poorly initialised
     }
 
     public void RefreshCombatUI()
@@ -301,15 +365,11 @@ public class CombatMenuController : MenuController
         // 1. Remove the inactive buttons from the all buttons list that copies from the Menu Model
         SetCurrentMenu(combatUI);
         LoadMenuData(combatUI);
-
         int stanceBtn = stanceButtons.IndexOf(currentStance);
         Button activeStanceBtn = combatUI.stanceButtons[stanceBtn];
-
         List<Button> activeMenuButtons = new List<Button>();
-
         if (!activeMenuButtons.Contains(activeStanceBtn)) activeMenuButtons.Add(activeStanceBtn);
         activeMenuButtons.AddRange(combatUI.menuButtons);
-
         allButtons = new List<Button>(activeMenuButtons);
         currentButton = allButtons[GetCurrentButtonIndex()];
     }
@@ -319,7 +379,7 @@ public class CombatMenuController : MenuController
         if (isSelecting)
         {
             // Close Sub menu if open 
-            if (menuHistory.Count > 0) { CloseSubMenu();}
+            if (menuHistory.Count > 0) { CloseSubMenu(); }
             // First we clear menu history stack to reset menu nav
             menuHistory.Clear();
             // need to prevent unnecessary calls here
@@ -329,13 +389,11 @@ public class CombatMenuController : MenuController
         else
         {
             ToggleSelectHUD(false);
-
             // Added as a catch to prevent UI coming up during player turn, but the TBC Manager should handle this not here
-            if (CodeManager.Instance._turnBasedCombatManager.GetPlayerTurn)
+            if (combatManager.GetPlayerTurn)
             {
                 ToggleCombatHUD(true);
             }
-
             base.GoBack();
             Debug.Log($"Combat Menu: Reset from Normal Menu.");
         }
@@ -358,22 +416,6 @@ public class CombatMenuController : MenuController
             ToggleSelectHUD(false);
             base.GoBack();
             Debug.Log($"Combat Menu: Reset from Normal Menu.");
-        }
-    }
-
-    public void DisableAbilityButtons()
-    {
-        for (int i = 0; i < abilityButtons.Count; i++)
-        {
-            abilityButtons[i].gameObject.SetActive(false); // Hide extra buttons
-        }
-    }
-
-    public void DisableTargetButtons()
-    {
-        for (int i = 0; i < targetButtons.Count; i++)
-        {
-            targetButtons[i].gameObject.SetActive(false); // Hide extra buttons
         }
     }
 }
