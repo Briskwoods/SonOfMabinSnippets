@@ -297,7 +297,7 @@ public class CombatMenuController : MenuController
     {
         for (int i = 0; i < targetDataContainers.Count; i++)
         {
-            targetDataContainers[i].gameObject.SetActive(false);
+            targetDataContainers[i].Close();
         }
     }
 
