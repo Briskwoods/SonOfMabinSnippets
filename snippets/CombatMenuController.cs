@@ -4,8 +4,12 @@
 // @tags: UI, MVP, Observer Pattern, MVVC/MVP
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class CombatMenuController : MenuController
 {
@@ -23,6 +27,7 @@ public class CombatMenuController : MenuController
 
     [Header("Ability Queue")]
     public TextMeshProUGUI queueStatusText;
+    public List<Ability> abilityQueue;
 
     [Header("Combat UI's and Sub-Menu's")]
     public CombatHUDModel combatUI;
@@ -83,8 +88,8 @@ public class CombatMenuController : MenuController
         InputReciever.OnNavigate += NavigateMenu;
         InputReciever.OnMenuOpen += OpenMenu;
 
-        // TURN BASED COMBAT FUNCTIONS
-        EventBus.Subscribe<CombatMenuResetEventData>(ResetCombatMenu);
+        // ABILITY QUEUE EVENTS
+        EventBus.Subscribe<UpdateAbilityQueuedUIEventData>(OnAbilityQueued);
     }
 
     private void OnDisable()
@@ -95,8 +100,8 @@ public class CombatMenuController : MenuController
         InputReciever.OnNavigate -= NavigateMenu;
         InputReciever.OnMenuOpen -= OpenMenu;
 
-        // TURN BASED COMBAT FUNCTIONS
-        EventBus.Unsubscribe<CombatMenuResetEventData>(ResetCombatMenu);
+        // ABILITY QUEUE EVENTS
+        EventBus.Unsubscribe<UpdateAbilityQueuedUIEventData>(OnAbilityQueued);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,16 +119,11 @@ public class CombatMenuController : MenuController
 
     public void SetStance(Stance stance)
     {
-        // Needs to take into account the Button order in the UI needs to match the Stances order
         int stanceBtn = (int)stance.stanceType;
         DisableOtherStanceBtns();
         currentStance = stanceButtons[stanceBtn];
         currentStance.SetActive(true);
         Debug.Log($"Combat Menu: Enabled {currentStance.name}");
-
-        // From there we need to
-        // 1. Remove the inactive buttons from the all buttons list that copies from the Menu Model
-
         if (menuHistory.Count < 1)
         {
             SetCurrentMenu(combatUI);
@@ -234,6 +234,17 @@ public class CombatMenuController : MenuController
         {
             abilityDataContainers[i].Close();
         }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////// QUEUE MANAGER FUNCTIONALITY ////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    public void OnAbilityQueued(UpdateAbilityQueuedUIEventData eventData)
+    {
+        queueStatusText.SetText($"{eventData.queuePos}/{eventData.queueLimit}");
+        abilityQueue = new List<Ability>(eventData.queuedAbilities);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -361,8 +372,6 @@ public class CombatMenuController : MenuController
     public void RefreshCombatUI()
     {
         combatUI.Open();
-        // From there we need to
-        // 1. Remove the inactive buttons from the all buttons list that copies from the Menu Model
         SetCurrentMenu(combatUI);
         LoadMenuData(combatUI);
         int stanceBtn = stanceButtons.IndexOf(currentStance);
@@ -372,50 +381,27 @@ public class CombatMenuController : MenuController
         activeMenuButtons.AddRange(combatUI.menuButtons);
         allButtons = new List<Button>(activeMenuButtons);
         currentButton = allButtons[GetCurrentButtonIndex()];
+        ToggleInput(true);
     }
 
     public void ResetCombatMenu()
     {
-        if (isSelecting)
-        {
-            // Close Sub menu if open 
-            if (menuHistory.Count > 0) { CloseSubMenu(); }
-            // First we clear menu history stack to reset menu nav
-            menuHistory.Clear();
-            // need to prevent unnecessary calls here
-            RefreshCombatUI();
-            Debug.Log($"Combat Menu: Reset From Selecting Menu.");
-        }
-        else
-        {
-            ToggleSelectHUD(false);
-            // Added as a catch to prevent UI coming up during player turn, but the TBC Manager should handle this not here
-            if (combatManager.GetPlayerTurn)
-            {
-                ToggleCombatHUD(true);
-            }
-            base.GoBack();
-            Debug.Log($"Combat Menu: Reset from Normal Menu.");
-        }
+        if (isSelecting) { ToggleSelectHUD(false); }
+        ResetMenuData();
+        // Reset Ability Queue
+        queueStatusText.SetText($"");
     }
 
-    public void ResetCombatMenu(CombatMenuResetEventData combatMenuResetEventData)
+    void ResetMenuData()
     {
-        if (isSelecting)
-        {
-            // Close Sub menu if open 
-            if (menuHistory.Count > 0) { CloseSubMenu(); }
-            // First we clear menu history stack to reset menu nav
-            menuHistory.Clear();
-            // need to prevent unnecessary calls here
-            RefreshCombatUI();
-            Debug.Log($"Combat Menu: Reset From Selecting Menu.");
-        }
-        else
-        {
-            ToggleSelectHUD(false);
-            base.GoBack();
-            Debug.Log($"Combat Menu: Reset from Normal Menu.");
-        }
+        // Close Sub menu if open 
+        do { base.GoBack(); } while (menuHistory.Count > 0);
+        // First we clear menu history stack to reset menu nav
+        menuHistory.Clear();
+        // need to prevent unnecessary calls here
+        ToggleCombatHUD(false);
+        ToggleInput(false);
+        foreach (AbilityBtnDataContainer dataContainer in abilityDataContainers) { dataContainer.ClearContainer(); }
+        foreach (TargetBtnDataContainer dataContainer in targetDataContainers) { dataContainer.ClearContainer(); }
     }
 }
